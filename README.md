@@ -2,56 +2,124 @@
 
 ![Diagram1](diagram1.png)
 
-## 1. Podstawowy archetyp i kompozyt
+## 1. Archetypy i wzorzec Kompozytu
 
-Attraction – główna klasa abstrakcyjna reprezentująca pojedynczą atrakcję lub grupę atrakcji (wzorzec produkt).
+System wykorzystuje wzorzec Kompozyt, aby umożliwić zarządzanie pojedynczymi atrakcjami i grupami atrakcji w spójny sposób.
 
-Zawiera Id, Name, Description, Metadata – czyli wszystkie podstawowe cechy, które są wspólne dla każdej atrakcji.
+###1 .1 Klasa bazowa: Attraction
 
-Metody: GetPrice() i Validate() – obliczanie ceny i walidacja reguł biznesowych.
+Opis: Abstrakcyjna klasa reprezentująca pojedynczą atrakcję lub grupę atrakcji.
 
-IAttractionComponent – interfejs Kompozytu, który narzuca ten sam kontrakt dla pojedynczych atrakcji i grup.
+Atrybuty:
 
-Dziedziczą po nim SingleAttraction i AttractionGroup.
+Id – unikalny identyfikator
 
-SingleAttraction – liść kompozytu. Konkretna atrakcja, której nie da się podzielić na mniejsze części.
+Name – nazwa atrakcji
 
-Posiada np. Duration, Location, SeasonAvailability.
+Description – opis
 
-AttractionGroup – kompozyt. Może zawierać listę innych komponentów (Single lub Group).
+Metadata – dodatkowe, niezmienne informacje
 
-Metody: Add(child) i Remove(child) – zarządzanie dziećmi w grupie.
+Metody:
 
-## 2. Stany atrakcji
+GetPrice() – oblicza cenę atrakcji
 
-Draft – szkic atrakcji.
+Validate() – sprawdza zgodność z regułami biznesowymi
 
-Zawiera metodę DefineMetadata() do definiowania niezmiennych cech i wymagań.
+### 1.2 Interfejs: IAttractionComponent
 
-Po Draft powstaje Attraction (czyli prawdziwy produkt w systemie).
+Cel: Zapewnienie spójnego kontraktu dla pojedynczych atrakcji (SingleAttraction) i grup (AttractionGroup).
 
-CatalogItem – pojedynczy element w katalogu.
+### 1.3 Liść: SingleAttraction
 
-Odwołuje się do Attraction (może być Single lub Group).
+Opis: Pojedyncza, niepodzielna atrakcja.
 
-Zawiera cenę (Price) i okres dostępności (AvailableFrom / AvailableTo).
+Atrybuty dodatkowe:
 
-Catalog – lista ofert (czyli lista CatalogItem).
+Duration – czas trwania
 
-Posiada metodę AddItem() i RemoveItem() do zarządzania ofertą.
+Location – miejsce
 
-Instance – konkretna rezerwacja, powstała z katalogu.
+SeasonAvailability – okres dostępności
 
-Zawiera: Date (kiedy), UserId (kto), SelectedOptions (wybrane warianty), FinalPrice (cena końcowa).
+### 1.4 Kompozyt: AttractionGroup
 
-Odwołuje się do CatalogItem, czyli konkretnej oferty z katalogu.
+Opis: Grupa atrakcji, mogąca zawierać inne komponenty (SingleAttraction lub AttractionGroup).
 
-## 3. Relacje
+Metody:
 
-Relationship – reprezentuje powiązania między atrakcjami.
+Add(child) – dodaje atrakcję do grupy
 
-From i To → wskazują, między którymi atrakcjami zachodzi relacja.
+Remove(child) – usuwa atrakcję z grupy
 
-Type = Mandatory / Optional.
+## 2. Stany atrakcji i katalog
 
-ValidateRelationship() – walidacja, czy zależności są poprawne.
+### 2.1 Draft
+
+Opis: Wstępny szkic atrakcji.
+
+Metoda: DefineMetadata() – definiuje niezmienne cechy i wymagania.
+
+Przejście: Po zakończeniu draftu powstaje Attraction.
+
+### 2.2 CatalogItem
+
+Opis: Pojedyncza oferta w katalogu.
+
+Atrybuty:
+
+Odwołanie do Attraction (pojedynczej lub grupowej)
+
+Price – cena
+
+AvailableFrom / AvailableTo – okres dostępności
+
+### 2.3 Catalog
+
+Opis: Lista wszystkich ofert.
+
+Metody:
+
+AddItem() – dodaje ofertę do katalogu
+
+RemoveItem() – usuwa ofertę z katalogu
+
+### 2.4 Instance
+
+Opis: Konkretna rezerwacja utworzona na podstawie katalogu.
+
+Atrybuty:
+
+Date – data rezerwacji
+
+UserId – identyfikator użytkownika
+
+SelectedOptions – wybrane warianty
+
+FinalPrice – cena końcowa
+
+Odwołanie: Do CatalogItem, czyli konkretnej oferty
+
+## 3. Relacje między atrakcjami
+
+### 3.1 Klasa Relationship
+
+Opis: Reprezentuje powiązania między atrakcjami.
+
+Atrybuty:
+
+From i To – wskazują powiązane atrakcje
+
+Type – typ zależności (Mandatory / Optional)
+
+Metoda: ValidateRelationship() – sprawdza poprawność zależności między atrakcjami
+
+## 4. Podsumowanie architektury
+
+Wzorzec Kompozyt umożliwia elastyczne zarządzanie pojedynczymi atrakcjami i grupami.
+
+Stany atrakcji (Draft, Attraction, CatalogItem) ułatwiają kontrolę cyklu życia produktu.
+
+Katalog i rezerwacje (Catalog, Instance) wspierają proces sprzedaży i rezerwacji.
+
+Relacje między atrakcjami zapewniają integralność i zgodność oferty.
