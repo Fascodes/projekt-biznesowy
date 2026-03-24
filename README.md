@@ -1,125 +1,221 @@
-# Projekt biznesowy - Wachowicz, Zawartka, Łyko, Zięba
+# System Zarządzania Atrakcjami Turystycznymi
+## Plan Implementacji — Faza 1: Atrakcje, Kategorie i Relacje
 
-![Diagram1](diagram1.png)
+---
 
-## 1. Archetypy i wzorzec Kompozytu
+## Opis problemu i zakres fazy 1
 
-System wykorzystuje wzorzec Kompozyt, aby umożliwić zarządzanie pojedynczymi atrakcjami i grupami atrakcji w spójny sposób.
+System umożliwia dodawanie atrakcji turystycznych (muzea, eventy, rejsy, szlaki, zwiedzanie), ich kategoryzowanie oraz definiowanie relacji między nimi. Atrakcje posiadają cykl życia (Draft → Catalog) i mogą być grupowane w złożone produkty turystyczne.
 
-### 1.1 Klasa bazowa: Attraction
+> **ZAKRES FAZY 1:** W tej fazie NIE implementujemy planowania wycieczek ani instancji planu. Skupiamy się wyłącznie na modelu atrakcji, ich kategoriach i relacjach między nimi.
 
-Opis: Abstrakcyjna klasa reprezentująca pojedynczą atrakcję lub grupę atrakcji.
+---
 
-Atrybuty:
+## Kluczowe decyzje projektowe
 
-Id – unikalny identyfikator
+### 1. Wzorzec Composite
 
-Name – nazwa atrakcji
+Umożliwia traktowanie pojedynczej atrakcji i grupy w identyczny sposób przez wspólny interfejs.
 
-Description – opis
+```csharp
+public interface IAttractionComponent
+{
+    AttractionId Id { get; }
+    string Name { get; }
+}
 
-Metadata – dodatkowe, niezmienne informacje
+public class SingleAttraction : IAttractionComponent { ... }
 
-Metody:
+public class AttractionGroup : IAttractionComponent
+{
+    private Dictionary<AttractionId, GroupComponentMetadata> _children;
+    public SequenceMode SequenceMode { get; }  // STRICT | FLEXIBLE | NONE
+}
+```
 
-GetPrice() – oblicza cenę atrakcji
+> **TIP:** Ustawiając `FLEXIBLE`, pozwalamy na dowolną kolejność zwiedzania. Ustawiając `STRICT`, wymuszamy konkretną ścieżkę (np. najpierw wejście, potem komnata).
 
-Validate() – sprawdza zgodność z regułami biznesowymi
+---
 
-### 1.2 Interfejs: IAttractionComponent
+### 2. Identyfikacja i cykl życia (Draft → Catalog)
 
-Cel: Zapewnienie spójnego kontraktu dla pojedynczych atrakcji (SingleAttraction) i grup (AttractionGroup).
+Każdy element posiada silnie typowany Value Object (np. `AttractionId`) owijający `Guid`.
 
-### 1.3 Liść: SingleAttraction
+**Stany atrakcji:**
+- `DRAFT` — atrakcja jest w edycji. Posiada metadane i reguły, ale nie jest publicznie dostępna.
+- `CATALOG` — atrakcja zweryfikowana. Może być wyświetlana i wyszukiwana przez użytkowników.
+- `ARCHIVED` — atrakcja wycofana z katalogu.
 
-Opis: Pojedyncza, niepodzielna atrakcja.
+> **TIP:** Katalog nie jest statyczną listą. `DiscoveryService` pobiera wszystkie atrakcje w stanie `CATALOG` i filtruje je dynamicznie przez `AvailabilityRules`.
 
-Atrybuty dodatkowe:
+---
 
-Duration – czas trwania
+### 3. Relacje: na poziomie modelu domenowego
 
-Location – miejsce
+Relacje są oddzielnymi encjami w domenie — nie są hardkodowane w klasach atrakcji.
 
-SeasonAvailability – okres dostępności
+- **Źle (poziom atrakcji):** klasa `Museum` ma w kodzie `requires(Ferry)`. To hardkodowanie.
+- **Dobrze (poziom modelu):** relacje są osobnymi encjami.
 
-### 1.4 Kompozyt: AttractionGroup
+```csharp
+public class AttractionRelation
+{
+    public AttractionId From { get; }
+    public AttractionId To { get; }
+    public RelationType Type { get; }  // REQUIRES | EXCLUDES | RECOMMENDED_AFTER
+}
+```
 
-Opis: Grupa atrakcji, mogąca zawierać inne komponenty (SingleAttraction lub AttractionGroup).
+> **TIP:** Dzięki temu logika relacji jest odseparowana od atrakcji. Dodanie nowego typu relacji nie wymaga zmian w klasach atrakcji.
 
-Metody:
+---
 
-Add(child) – dodaje atrakcję do grupy
+### 4. Wzorzec Specification
 
-Remove(child) – usuwa atrakcję z grupy
+Specyfikacje pozwalają na walidację bez zaśmiecania encji logiką. Implementowane jako czyste klasy domenowe.
 
-## 2. Stany atrakcji i katalog
+```csharp
+public interface ISpecification<T>
+{
+    bool IsSatisfiedBy(T candidate);
+    ISpecification<T> And(ISpecification<T> other);
+    ISpecification<T> Or(ISpecification<T> other);
+    ISpecification<T> Not();
+}
 
-### 2.1 Draft
+// Sprawdza czy atrakcja jest w katalogu
+public class IsInCatalogSpec : CompositeSpecification<SingleAttraction>
+{
+    public override bool IsSatisfiedBy(SingleAttraction a)
+        => a.State == AttractionState.Catalog;
+}
+```
 
-Opis: Wstępny szkic atrakcji.
+---
 
-Metoda: DefineMetadata() – definiuje niezmienne cechy i wymagania.
+### 5. Model Data-Driven Rules (dostępność)
 
-Przejście: Po zakończeniu draftu powstaje Attraction.
+Aby uniknąć hardkodowania reguł, logika dostępności jest przechowywana jako dane. Każda reguła to osobna encja.
 
-### 2.2 CatalogItem
+```csharp
+public class RuleDefinition
+{
+    public RuleId Id { get; }
+    public RuleType Type { get; }      // WEEKLY | SEASONAL | DATE_EXCEPTION
+    public Dictionary<string, object> Params { get; }
+    public int Priority { get; }
+    public Effect Effect { get; }       // ALLOW | DENY
+}
+```
 
-Opis: Pojedyncza oferta w katalogu.
+**Kluczowe cechy:**
+- **Natychmiastowa aktualizacja** — zmiana reguły przez API od razu wpływa na `DiscoveryService`.
+- **Udostępnianie reguł** — jedna reguła (np. „zamknięte 1 listopada") może obowiązywać wiele atrakcji.
 
-Atrybuty:
+---
 
-Odwołanie do Attraction (pojedynczej lub grupowej)
+### 6. Scenariusze (warianty atrakcji)
 
-Price – cena
+Jedna atrakcja może mieć wiele Scenariuszy — konfigurowalnych wariantów z osobnym czasem trwania, listą POI i regułami dostępności.
 
-AvailableFrom / AvailableTo – okres dostępności
+```
+Attraction: "Zwiedzanie Wawelu"
+  Scenario: "Trasa A – komnaty królewskie"
+      Duration: 90min
+      PointsOfInterest: ["Sala Poselska", "Komnata Królewska", "Kaplica"]
+      Availability: Pn-Pt 09:00-17:00, Sb 10:00-14:00
+                    Wyjątek: 2024-12-24 CLOSED
+                    Sezony: SPRING, SUMMER, AUTUMN
 
-### 2.3 Catalog
+  Scenario: "Trasa B – skarbiec + zbrojownia"
+      Duration: 60min
+      PointsOfInterest: ["Skarbiec", "Zbrojownia"]
+      Availability: Sb-Nd 10:00-15:00, ALL seasons
+```
 
-Opis: Lista wszystkich ofert.
+> **TIP:** Czas trwania jest na poziomie `Scenario`, nie `Attraction` — różne trasy zajmują różny czas.
 
-Metody:
+---
 
-AddItem() – dodaje ofertę do katalogu
+### Relacje (`domain/relation/`)
 
-RemoveItem() – usuwa ofertę z katalogu
+**`AttractionRelation.cs`**
+Encja relacji: `From`, `To`, `Type` (`Requires` / `Excludes` / `RecommendedAfter`).
 
-### 2.4 Instance
+**`IAttractionRelationRepository.cs`**
+Port repozytorium relacji — `FindBySource(AttractionId)`, `FindAll()`.
 
-Opis: Konkretna rezerwacja utworzona na podstawie katalogu.
+---
 
-Atrybuty:
+### Specyfikacje (`domain/specification/`)
 
-Date – data rezerwacji
+**`ISpecification<T>.cs`**
+Interfejs Specification z metodami `And()`, `Or()`, `Not()`.
 
-UserId – identyfikator użytkownika
+**`CompositeSpecification<T>.cs`**
+Abstrakcyjna klasa bazowa implementująca `And()`, `Or()`, `Not()` — konkretne specyfikacje implementują tylko `IsSatisfiedBy()`.
 
-SelectedOptions – wybrane warianty
+**`IsInCatalogSpec.cs`**
+Sprawdza `attraction.State == Catalog`.
 
-FinalPrice – cena końcowa
+**`IsAvailableInSeasonSpec.cs`**
+Sprawdza czy którykolwiek `Scenario` ma dostępność dla danego sezonu.
 
-Odwołanie: Do CatalogItem, czyli konkretnej oferty
+**`IsAvailableAtTimeSpec.cs`**
+Sprawdza czy którykolwiek `Scenario` jest dostępny dla podanego `DateTime`.
 
-## 3. Relacje między atrakcjami
+---
 
-### 3.1 Klasa Relationship
+## Application Layer
 
-Opis: Reprezentuje powiązania między atrakcjami.
+**`CreateAttractionUseCase.cs`**
+Orkiestruje: walidacja DTO → stworzenie `SingleAttraction` w stanie `Draft` → zapis przez repo.
 
-Atrybuty:
+**`PublishAttractionUseCase.cs`**
+Pobiera atrakcję → wywołuje `Publish()` → zapis. Waliduje czy atrakcja spełnia wymagania do publikacji.
 
-From i To – wskazują powiązane atrakcje
+**`CreateAttractionGroupUseCase.cs`**
+Tworzy `AttractionGroup` z podanych ID komponentów. Sprawdza czy wszystkie komponenty istnieją.
 
-Type – typ zależności (Mandatory / Optional)
+**`AddAttractionRelationUseCase.cs`**
+Dodaje relację między dwiema atrakcjami. Waliduje brak cykli dla relacji `REQUIRES`.
 
-Metoda: ValidateRelationship() – sprawdza poprawność zależności między atrakcjami
+**`AddScenarioUseCase.cs`**
+Dodaje `Scenario` do istniejącej atrakcji. Tylko atrakcje w stanie `Draft` mogą być modyfikowane.
 
-## 4. Podsumowanie architektury
+---
 
-Wzorzec Kompozyt umożliwia elastyczne zarządzanie pojedynczymi atrakcjami i grupami.
+## API Layer
 
-Stany atrakcji (Draft, Attraction, CatalogItem) ułatwiają kontrolę cyklu życia produktu.
+**`AttractionController.cs`**
+REST endpoints:
+- `POST /attractions` — tworzenie atrakcji (stan: `Draft`)
+- `PUT /attractions/{id}/publish` — zmiana stanu `Draft → Catalog`
+- `POST /attractions/{id}/scenarios` — dodanie scenariusza
+- `POST /attraction-groups` — tworzenie grupy
+- `GET /attractions` — lista z filtrem `?state=CATALOG&season=WINTER`
 
-Katalog i rezerwacje (Catalog, Instance) wspierają proces sprzedaży i rezerwacji.
+**`AttractionRelationController.cs`**
+REST endpoints:
+- `POST /attraction-relations` — dodanie relacji (`from`, `to`, `type`)
+- `GET /attraction-relations?source={id}` — relacje wychodzące z atrakcji
 
-Relacje między atrakcjami zapewniają integralność i zgodność oferty.
+**`dto/`**
+Request/Response DTOs — brak logiki, tylko dane. Przykłady: `CreateAttractionRequest`, `AttractionResponse`, `AddRelationRequest`.
+
+---
+
+## Infrastructure Layer
+
+**`InMemoryAttractionRepository.cs`**
+Implementuje `IAttractionRepository` — na potrzeby PoC używa `ConcurrentDictionary<AttractionId, SingleAttraction>`.
+
+**`InMemoryAttractionRelationRepository.cs`**
+Implementuje `IAttractionRelationRepository` — przechowuje listę relacji w pamięci.
+
+---
+
+## UML
+
+<img width="2064" height="1099" alt="image" src="https://github.com/user-attachments/assets/af82f265-b742-4f79-9608-da6f5bbb06f4" />
+
