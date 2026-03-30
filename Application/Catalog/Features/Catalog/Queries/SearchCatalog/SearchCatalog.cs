@@ -59,7 +59,7 @@ namespace AttractionCatalog.Application.Catalog.Features.Catalog.Queries.SearchC
             {
                 Id = c.Id.Value,
                 Name = c.Name,
-                IsAvailable = true
+                IsAvailable = true // Skoro przeszły przez silnik SearchService, to są dostępne
             }).ToList();
         }
     }

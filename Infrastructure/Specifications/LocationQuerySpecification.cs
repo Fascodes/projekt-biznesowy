@@ -16,18 +16,11 @@ namespace AttractionCatalog.Infrastructure.Specifications
 
         public Expression<Func<IAttractionComponent, bool>> ToExpression()
         {
-            // Simple geographic calculation in C# expressions
-            // In a real DB provider, this would be translated to SQL GIS extensions.
             return component => 
-                component is SingleAttraction s &&
-                CalculateDistance(s.Location, _area.CenterLatitude, _area.CenterLongitude) <= _area.RadiusKm;
-        }
-
-        private static double CalculateDistance(Location loc, double lat, double lon)
-        {
-             // Haversine formula implementation omitted for brevity. 
-             // Returns distance in KM.
-             return 1.0; 
+                component is SingleAttraction s && 
+                // Tu używamy metody DistanceToKm z kroku 1
+                new Location(s.Location.Latitude, s.Location.Longitude)
+                    .DistanceToKm(new Location(_area.CenterLatitude, _area.CenterLongitude)) <= _area.RadiusKm;
         }
     }
 }

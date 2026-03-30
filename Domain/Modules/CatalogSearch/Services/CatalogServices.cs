@@ -48,25 +48,16 @@ namespace AttractionCatalog.Domain.Modules.CatalogSearch.Services
 
         public bool CheckAvailability(IAttractionComponent component, DateTime time)
         {
-            // 1. Check self schedule with rule overriding (Priority based)
-            if (!component.Schedule.IsAvailable(time, _globalRules, _compiler))
-            {
-                return false;
-            }
+            // 1. Sprawdź reguły własne obiektu (Priority Overriding)
+            if (!component.Schedule.IsAvailable(time, _globalRules, _compiler)) return false;
 
-            // 2. Recursive algorithm for Groups (Composite Logic from README)
+            // 2. Jeśli to Grupa (Composite): Wszystkie dzieci muszą być dostępne
             if (component is AttractionGroup group)
-            {
-                // Grupa: IsAvailable = Self.Allow AND All(Children.IsAvailable)
                 return group.Components.All(child => CheckAvailability(child, time));
-            }
 
-            // 3. Simple component: Check scenarios (SingleAttraction logic)
+            // 3. Jeśli to Atrakcja: Przynajmniej jeden scenariusz musi być dostępny (AND z globalnymi)
             if (component is SingleAttraction single)
-            {
-                // SingleAttraction: At least one scenario must be available
                 return single.Scenarios.Any(s => s.Schedule.IsAvailable(time, _globalRules, _compiler));
-            }
 
             return true;
         }
