@@ -32,9 +32,9 @@ Logika biznesowa jest silnie odseparowana od warstwy technicznej:
 
 Pomimo wspólnej bazy kodu, system jest podzielony na logiczne moduły (Bounded Contexts), co pozwala na ich niezależne rozwijanie:
 
-- **Core/Attractions**: Zarządzanie definicją atrakcji, ich cyklem życia (Draft/Catalog), Tagami (`Tag`) służącymi do dynamicznego filtrowania bazodanowego.
-- **Modules/Availability (Catalog Search)**: Silnik reguł odpowiedzialny za zaawansowane wyszukiwanie i filtrowanie atrakcji względem czasu, tagów (np. "Kryty", "Dla Dzieci") i reguł harmonogramu.
-- **Modules/Relations**: Odseparowana logika powiązań między atrakcjami.
+- **Core/Attractions**: Zarządzanie definicją atrakcji, ich cyklem życia (Draft/Catalog), Tagami (`Tag`) oraz fizyczną lokalizacją (`Location`).
+- **Modules/CatalogSearch (Availability)**: Silnik reguł odpowiedzialny za zaawansowane wyszukiwanie i filtrowanie atrakcji względem czasu, tagów i obszarów geograficznych (`GeoArea`).
+- **Modules/Relations**: Odseparowana logika powiązań (Requires/Excludes) między atrakcjami.
 
 ---
 
@@ -134,18 +134,21 @@ Elastyczne filtrowanie obiektów odbywa się z użyciem zapytań opartych na obi
 ```csharp
 public class SearchCriteria {
     public DateRange TimeRange { get; }
-    public Location? Location { get; }          // Opcjonalny (Value Object) – filtr geograficzny
+    public GeoArea? NearArea { get; }           // Opcjonalny filtr geograficzny (obszar wyszukiwania)
     public TimeSpan? RequiredDuration { get; }  // Opcjonalny – filtr czasu trwania
     public List<TagId> RequiredTags { get; }    // Predykaty inkluzywne (wymagane)
     public List<TagId> ExcludedTags { get; }    // Predykaty ekskluzywne (wykluczone)
 }
 
-// Location jako Value Object (DDD) – bez tożsamości, porównywany przez wartości pól
-public record Location(double Latitude, double Longitude, double RadiusKm, string City);
+// Location – fizyczny punkt atrakcji na mapie (Value Object przypisany do SingleAttraction)
+public record Location(double Latitude, double Longitude);
+
+// GeoArea – obszar wyszukiwania (Value Object używany wyłącznie w zapytaniach)
+public record GeoArea(double CenterLatitude, double CenterLongitude, double RadiusKm);
 ```
 
 **Pre-Filtrowanie na Poziomie Bazy Danych (IQuerySpecification):**
-Aby uniknąć ładowania wszystkich atrakcji do pamięci RAM, architektura zawiera interfejs `IQuerySpecification<IAttractionComponent>`. Jego implementacja (`LocationQuerySpecification`) jest stosowana **warunkowo** — wyłącznie gdy `SearchCriteria.Location != null`. Jeśli kryterium lokalizacji nie zostaje przekazane, system pracuje na pełnym zbiorze atrakcji w stanie `CATALOG`.
+Aby uniknąć ładowania wszystkich atrakcji do pamięci RAM, architektura zawiera interfejs `IQuerySpecification<IAttractionComponent>`. Jego implementacja (`LocationQuerySpecification`) jest stosowana **warunkowo** — wyłącznie gdy `SearchCriteria.NearArea != null`. Specyfikacja oblicza odległość między `Location` atrakcji a `GeoArea.Center` z żądania, odrzucając obiekty spoza podanego promienia.
 ---
 
 ### 6.2. Dostępność Grupy (Composite Logic)

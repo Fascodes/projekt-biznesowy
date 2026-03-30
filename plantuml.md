@@ -5,109 +5,114 @@ skinparam linetype ortho
 
 package "Domain Layer (Core Logic)" {
     
-    interface IAttractionComponent {
-        + Id : AttractionId
-        + Name : String
-        + Tags : List<Tag>
-        + Schedule : AvailabilitySchedule
+    package "Core/Attractions" {
+        interface IAttractionComponent {
+            + Id : AttractionId
+            + Name : String
+            + Tags : List<Tag>
+            + Schedule : AvailabilitySchedule
+        }
+
+        class SingleAttraction {
+            + Id : AttractionId
+            + Name : String
+            + State : AttractionState (Draft/Catalog/Internal)
+            + Tags : List<Tag>
+            + Location : Location
+            + Schedule : AvailabilitySchedule
+        }
+
+        class Tag {
+            + Id : TagId
+            + Code : string
+            + DisplayName : string
+            + Description : string
+        }
+
+        class AttractionGroup {
+            + Id : AttractionId
+            + Name : String
+            + SequenceMode : SequenceMode
+            + Tags : List<Tag>
+            + Schedule : AvailabilitySchedule
+        }
+
+        class AttractionRelation {
+            + From : AttractionId
+            + To : AttractionId
+            + Type : RelationType (Requires/Excludes)
+        }
+
+        class Scenario {
+            + Id : ScenarioId
+            + Name : String
+            + Duration : TimeSpan
+            + Tags : List<Tag>
+            + Schedule : AvailabilitySchedule
+        }
+
+        class Location <<ValueObject>> {
+            + Latitude : double
+            + Longitude : double
+        }
     }
 
-    class SingleAttraction {
-        + Id : AttractionId
-        + Name : String
-        + State : AttractionState (Draft/Catalog/Internal)
-        + Tags : List<Tag>
-        + Schedule : AvailabilitySchedule
-    }
+    package "Modules/CatalogSearch (Availability)" {
+        class AvailabilitySchedule {
+            + BasePriority : int
+            + ActiveRules : List<RuleId>
+            + IsAvailable(time: DateRange) : bool
+        }
 
-    class Tag {
-        + Id : TagId
-        + Code : string
-        + DisplayName : string
-        + Description : string
-    }
+        note right of AvailabilitySchedule
+          Dla Grupy: IsAvailable = 
+          Rules.Allow AND All(Children.IsAvailable)
+        end note
 
-    class AttractionGroup {
-        + Id : AttractionId
-        + Name : String
-        + SequenceMode : SequenceMode
-        + Tags : List<Tag>
-        + Schedule : AvailabilitySchedule
-    }
+        class RuleDefinition {
+            + Id : RuleId
+            + Type : RuleType (Weekly/Seasonal/Exception)
+            + Priority : int
+            + Effect : Effect (Allow/Deny)
+            + Params : Dictionary<string, object>
+        }
 
-    class AttractionRelation {
-        + From : AttractionId
-        + To : AttractionId
-        + Type : RelationType (Requires/Excludes)
-    }
+        class GeoArea <<ValueObject>> {
+            + CenterLatitude : double
+            + CenterLongitude : double
+            + RadiusKm : double
+        }
 
-    class Scenario {
-        + Id : ScenarioId
-        + Name : String
-        + Duration : TimeSpan
-        + Tags : List<Tag>
-        + Schedule : AvailabilitySchedule
-    }
+        class SearchCriteria {
+            + TimeRange : DateRange
+            + NearArea : GeoArea?
+            + RequiredDuration : TimeSpan?
+            + RequiredTags : List<TagId>
+            + ExcludedTags : List<TagId>
+        }
 
-    class AvailabilitySchedule {
-        + BasePriority : int
-        + ActiveRules : List<RuleId>
-        + IsAvailable(time: DateRange) : bool
-    }
+        interface "ISpecification<SearchCriteria>" as ISpecification {
+            + IsSatisfiedBy(candidate : SearchCriteria) : bool
+        }
 
-    note right of AvailabilitySchedule
-      Dla Grupy: IsAvailable = 
-      Rules.Allow AND All(Children.IsAvailable)
-    end note
+        interface "IQuerySpecification<IAttractionComponent>" as IQuerySpec {
+            + ToExpression() : Predicate<IAttractionComponent>
+        }
 
-    class RuleDefinition {
-        + Id : RuleId
-        + Type : RuleType (Weekly/Seasonal/Exception)
-        + Priority : int
-        + Effect : Effect (Allow/Deny)
-        + Params : Dictionary<string, object>
-    }
+        class RuleSpecificationCompiler {
+            + Compile(rules: List<RuleDefinition>) : ISpecification<SearchCriteria>
+        }
 
-    class Location <<ValueObject>> {
-        + Latitude : double
-        + Longitude : double
-        + RadiusKm : double
-        + City : string
-    }
+        class AvailabilityResult {
+            + ComponentId : AttractionId
+            + IsAvailable : bool
+            + AvailableScenarios : List<ScenarioId>
+            + AppliedRules : List<RuleId>
+        }
 
-    class SearchCriteria {
-        + TimeRange : DateRange
-        + Location : Location?
-        + RequiredDuration : TimeSpan?
-        + RequiredTags : List<TagId>
-        + ExcludedTags : List<TagId>
-    }
-
-    interface "ISpecification<SearchCriteria>" as ISpecification {
-        + IsSatisfiedBy(candidate : SearchCriteria) : bool
-    }
-
-    interface "IQuerySpecification<IAttractionComponent>" as IQuerySpec {
-        + ToExpression() : Predicate<IAttractionComponent>
-    }
-
-    class LocationQuerySpecification {
-        + ToExpression() : Predicate<IAttractionComponent>
-    }
-
-    class RuleSpecificationCompiler {
-        + Compile(rules: List<RuleDefinition>) : ISpecification<SearchCriteria>
-    }
-
-    class AvailabilityResult {
-        + ComponentId : AttractionId
-        + IsAvailable : bool
-        + AvailableScenarios : List<ScenarioId>
-        + AppliedRules : List<RuleId>
-    }
-
-    class CatalogSearchService <<DomainService>> {
-        + FindAvailableAttractions(criteria: SearchCriteria, preFiltered: List<IAttractionComponent>) : List<AvailabilityResult>
+        class CatalogSearchService <<DomainService>> {
+            + FindAvailableAttractions(criteria: SearchCriteria, preFiltered: List<IAttractionComponent>) : List<AvailabilityResult>
+        }
     }
 
     IAttractionComponent <|.. SingleAttraction
@@ -125,7 +130,6 @@ package "Domain Layer (Core Logic)" {
     CatalogSearchService ..> AvailabilityResult : "Zwraca wynik dostępności"
     RuleSpecificationCompiler ..> ISpecification : "Tworzy filtry dla wyszukiwania"
     ISpecification ..> SearchCriteria : "Weryfikuje kryteria"
-    LocationQuerySpecification ..|> IQuerySpec
     IQuerySpec ..> SearchCriteria : "Pre-filtruje (na poziomie DB)"
 }
 
@@ -159,19 +163,26 @@ package "Application Layer (Use Cases)" {
     CreateAttractionGroupUseCase ..> AttractionGroupBuilder : "używa"
     AttractionGroupBuilder ..> AttractionGroup : "buduje"
     SearchCatalogUseCase ..> CatalogSearchService : "deleguje wyszukiwanie"
+    SearchCatalogUseCase ..> IAttractionRepository : "pre-filtruje przez IQuerySpec"
 }
 
 package "Infrastructure Layer" {
     interface IAttractionRepository {
         + Save(attraction : IAttractionComponent)
         + FindById(id : AttractionId) : IAttractionComponent
+        + FindByCriteria(spec: IQuerySpec) : List<IAttractionComponent>
     }
     
     class InMemoryAttractionRepository {
         - _data : ConcurrentDictionary
     }
     
+    class LocationQuerySpecification {
+        + ToExpression() : Predicate<IAttractionComponent>
+    }
+
     IAttractionRepository <|.. InMemoryAttractionRepository
+    LocationQuerySpecification ..|> IQuerySpec
 }
 
 package "API Layer" {
