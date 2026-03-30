@@ -134,11 +134,18 @@ Elastyczne filtrowanie obiektów odbywa się z użyciem zapytań opartych na obi
 ```csharp
 public class SearchCriteria {
     public DateRange TimeRange { get; }
-    public TimeSpan RequiredDuration { get; }
-    public List<TagId> RequiredTags { get; } // Prekadykaty inkluzywne (wymagane)
-    public List<TagId> ExcludedTags { get; } // Predykaty ekskluzywne (wykluczone)
+    public Location? Location { get; }          // Opcjonalny (Value Object) – filtr geograficzny
+    public TimeSpan? RequiredDuration { get; }  // Opcjonalny – filtr czasu trwania
+    public List<TagId> RequiredTags { get; }    // Predykaty inkluzywne (wymagane)
+    public List<TagId> ExcludedTags { get; }    // Predykaty ekskluzywne (wykluczone)
 }
+
+// Location jako Value Object (DDD) – bez tożsamości, porównywany przez wartości pól
+public record Location(double Latitude, double Longitude, double RadiusKm, string City);
 ```
+
+**Pre-Filtrowanie na Poziomie Bazy Danych (IQuerySpecification):**
+Aby uniknąć ładowania wszystkich atrakcji do pamięci RAM, architektura zawiera interfejs `IQuerySpecification<IAttractionComponent>`. Jego implementacja (`LocationQuerySpecification`) jest stosowana **warunkowo** — wyłącznie gdy `SearchCriteria.Location != null`. Jeśli kryterium lokalizacji nie zostaje przekazane, system pracuje na pełnym zbiorze atrakcji w stanie `CATALOG`.
 ---
 
 ### 6.2. Dostępność Grupy (Composite Logic)

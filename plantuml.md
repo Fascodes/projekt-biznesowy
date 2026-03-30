@@ -68,16 +68,31 @@ package "Domain Layer (Core Logic)" {
         + Params : Dictionary<string, object>
     }
 
+    class Location <<ValueObject>> {
+        + Latitude : double
+        + Longitude : double
+        + RadiusKm : double
+        + City : string
+    }
+
     class SearchCriteria {
         + TimeRange : DateRange
-        + Location : Location
-        + RequiredDuration : TimeSpan
+        + Location : Location?
+        + RequiredDuration : TimeSpan?
         + RequiredTags : List<TagId>
         + ExcludedTags : List<TagId>
     }
 
     interface "ISpecification<SearchCriteria>" as ISpecification {
         + IsSatisfiedBy(candidate : SearchCriteria) : bool
+    }
+
+    interface "IQuerySpecification<IAttractionComponent>" as IQuerySpec {
+        + ToExpression() : Predicate<IAttractionComponent>
+    }
+
+    class LocationQuerySpecification {
+        + ToExpression() : Predicate<IAttractionComponent>
     }
 
     class RuleSpecificationCompiler {
@@ -92,7 +107,7 @@ package "Domain Layer (Core Logic)" {
     }
 
     class CatalogSearchService <<DomainService>> {
-        + FindAvailableAttractions(criteria: SearchCriteria, attractions: List<IAttractionComponent>) : List<AvailabilityResult>
+        + FindAvailableAttractions(criteria: SearchCriteria, preFiltered: List<IAttractionComponent>) : List<AvailabilityResult>
     }
 
     IAttractionComponent <|.. SingleAttraction
@@ -106,10 +121,12 @@ package "Domain Layer (Core Logic)" {
     
     AttractionRelation ..> IAttractionComponent : "Wiąże (Requires/Excludes)"
     
-    CatalogSearchService ..> RuleSpecificationCompiler : "Ocenia atrakcje"
+    CatalogSearchService ..> RuleSpecificationCompiler : "Ocenia (reguły w pamięci)"
     CatalogSearchService ..> AvailabilityResult : "Zwraca wynik dostępności"
     RuleSpecificationCompiler ..> ISpecification : "Tworzy filtry dla wyszukiwania"
     ISpecification ..> SearchCriteria : "Weryfikuje kryteria"
+    LocationQuerySpecification ..|> IQuerySpec
+    IQuerySpec ..> SearchCriteria : "Pre-filtruje (na poziomie DB)"
 }
 
 package "Application Layer (Use Cases)" {
