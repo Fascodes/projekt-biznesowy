@@ -7,11 +7,11 @@ using AttractionCatalog.API.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Core Layers DI
+// Register core application services (dependency injection)
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure();
 
-// 2. Register the "Ultra-Modern" .NET 8 Exception Handler
+// Register the custom global exception handler
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
@@ -27,7 +27,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// 3. Enable the modern Exception Handler middleware
+// Enable the exception handling middleware
 app.UseExceptionHandler();
 
 app.UseHttpsRedirection();

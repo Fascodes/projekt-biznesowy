@@ -17,7 +17,7 @@ namespace AttractionCatalog.Domain.Modules.CatalogSearch.Services
     {
         public IRuleSpecification CompileRule(RuleDefinition rule)
         {
-            // Real implementation of the rule predicates
+            // Concrete implementation of rule predicates
             // Support for Weekly, Seasonal, and Exceptions.
             return new TimeBasedRuleSpecification(rule.Params);
         }
@@ -48,14 +48,14 @@ namespace AttractionCatalog.Domain.Modules.CatalogSearch.Services
 
         public bool CheckAvailability(IAttractionComponent component, DateTime time)
         {
-            // 1. Sprawdź reguły własne obiektu (Priority Overriding)
+            // Check component‑specific rules (priority overrides)
             if (!component.Schedule.IsAvailable(time, _globalRules, _compiler)) return false;
 
-            // 2. Jeśli to Grupa (Composite): Wszystkie dzieci muszą być dostępne
+            // If component is a group, ensure all child components are available
             if (component is AttractionGroup group)
                 return group.Components.All(child => CheckAvailability(child, time));
 
-            // 3. Jeśli to Atrakcja: Przynajmniej jeden scenariusz musi być dostępny (AND z globalnymi)
+            // For a single attraction, at least one scenario must be available (combined with global rules)
             if (component is SingleAttraction single)
                 return !single.Scenarios.Any() || single.Scenarios.Any(s => s.Schedule.IsAvailable(time, _globalRules, _compiler));
 

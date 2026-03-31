@@ -20,8 +20,7 @@ namespace AttractionCatalog.Domain.Modules.CatalogSearch.Entities
 
         public bool IsAvailable(DateTime time, IEnumerable<RuleDefinition> allRules, RuleSpecificationCompiler compiler)
         {
-            // Implementation of the "Priority Summation / Overriding" requested in the README
-            // Rule with the highest (BasePriority + RulePriority) wins
+            // The rule with the highest combined priority wins
             var applicableRules = allRules
                 .Where(r => _activeRuleIds.Contains(r.Id))
                 .Select(r => new { Rule = r, Priority = BasePriority + r.Priority })
@@ -33,12 +32,12 @@ namespace AttractionCatalog.Domain.Modules.CatalogSearch.Entities
                 var spec = compiler.CompileRule(r.Rule);
                 if (spec.IsSatisfiedBy(time))
                 {
-                    // High-priority rule found - its effect is FINAL for this time point
+                    // Once a high‑priority rule matches, its effect determines availability
                     return r.Rule.Effect == Effect.Allow;
                 }
             }
 
-            // Default behavior if no rules match
+            // If no rule matches, default to available
             return true;
         }
     }

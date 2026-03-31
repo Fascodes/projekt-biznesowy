@@ -10,20 +10,19 @@ namespace AttractionCatalog.Application
     {
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
-            // 1. Register MediatR for the whole assembly (Automatic Handler discovery)
+            // Register MediatR handlers from this assembly
             services.AddMediatR(cfg => {
                 cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
                 
-                // 2. Add the "Ultra Pro" Validation Pipeline Behavior
-                cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+                // Add validation pipeline behavior               cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
             });
 
-            // 3. Register Domain Services
+            // Register domain services
             services.AddSingleton(new System.Collections.Generic.List<AttractionCatalog.Domain.Modules.CatalogSearch.Entities.RuleDefinition>());
             services.AddScoped<CatalogSearchService>();
             services.AddScoped<RuleSpecificationCompiler>();
 
-            // 4. Register all Validators from current assembly (FluentValidation)
+            // Register all FluentValidation validators from this assembly
             services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
             return services;

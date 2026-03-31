@@ -17,7 +17,7 @@ namespace AttractionCatalog.Infrastructure.Core.Attractions.Adapters
         {
             _data[attraction.Id] = attraction;
 
-            // "Pro" move: Dispatch domain events after successful save
+            // Dispatch domain events after a successful save ("Pro" move)
             if (attraction is AggregateRoot aggregate)
             {
                 DispatchEvents(aggregate);

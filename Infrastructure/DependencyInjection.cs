@@ -8,7 +8,7 @@ namespace AttractionCatalog.Infrastructure
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services)
         {
-            // Register Data Persistence Adapters
+            // Register repository implementations for data persistence
             services.AddSingleton<IAttractionRepository, InMemoryAttractionRepository>();
 
             return services;
