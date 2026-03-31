@@ -12,10 +12,7 @@ using System.Threading.Tasks;
 
 namespace AttractionCatalog.API.Handlers
 {
-    /// <summary>
-    /// The "Ultra-Professional" .NET 8 Exception Handler.
-    /// Centrally manages all application failures and maps them to standard HTTP Problem Details.
-    /// </summary>
+    /// Handles unhandled exceptions and converts them into Problem Details responses.
     public class GlobalExceptionHandler : IExceptionHandler
     {
         private readonly ILogger<GlobalExceptionHandler> _logger;

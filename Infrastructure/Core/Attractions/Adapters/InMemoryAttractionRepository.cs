@@ -17,7 +17,7 @@ namespace AttractionCatalog.Infrastructure.Core.Attractions.Adapters
         {
             _data[attraction.Id] = attraction;
 
-            // Dispatch domain events after a successful save ("Pro" move)
+            // Dispatch domain events after a successful save 
             if (attraction is AggregateRoot aggregate)
             {
                 DispatchEvents(aggregate);
@@ -28,7 +28,7 @@ namespace AttractionCatalog.Infrastructure.Core.Attractions.Adapters
         
         public List<IAttractionComponent> FindByCriteria(IQuerySpecification<IAttractionComponent> spec)
         {
-            // Fully functional specification-based filtering
+            // TODO: apply specification filtering
             return _data.Values.ToList();
         }
 

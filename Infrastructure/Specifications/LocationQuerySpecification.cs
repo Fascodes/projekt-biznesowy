@@ -20,7 +20,6 @@ namespace AttractionCatalog.Infrastructure.Specifications
         {
             return component => 
                 component is SingleAttraction && 
-                // Use the DistanceToKm helper method (step 1) to calculate distance
                 new Location(((SingleAttraction)component).Location.Latitude, ((SingleAttraction)component).Location.Longitude)
                     .DistanceToKm(new Location(_area.CenterLatitude, _area.CenterLongitude)) <= _area.RadiusKm;
         }

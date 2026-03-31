@@ -14,7 +14,8 @@ namespace AttractionCatalog.Application
             services.AddMediatR(cfg => {
                 cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
                 
-                // Add validation pipeline behavior               cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+                // Add validation pipeline behavior
+                cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
             });
 
             // Register domain services

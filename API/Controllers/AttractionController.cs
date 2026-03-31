@@ -17,7 +17,7 @@ namespace AttractionCatalog.API.Controllers
         [HttpPut("{id}/publish")]
         public async Task<IActionResult> Publish(Guid id)
         {
-            // Publish Command would go here
+            // TODO: Publish command here
             return Ok();
         }
     }

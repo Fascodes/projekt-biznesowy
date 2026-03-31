@@ -4,20 +4,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace AttractionCatalog.API.Controllers
 {
-    /// <summary>
-    /// Base API Controller that provides streamlined access to common infrastructure.
-    /// Eliminates constructor boilerplate in derived controllers.
-    /// </summary>
+    /// Base controller that gives easy access to MediatR.
+    /// No need to inject it in every derived controller.
     [ApiController]
     [Route("api/[controller]")]
     public abstract class ApiControllerBase : ControllerBase
     {
         private ISender? _mediator;
 
-        /// <summary>
-        /// Access the MediatR Sender via property injection (from HttpContext).
-        /// Using ISender instead of IMediator for stricter adherence to CQS principles.
-        /// </summary>
+        /// MediatR sender resolved from the request scope.
         protected ISender Mediator => _mediator ??= HttpContext.RequestServices.GetRequiredService<ISender>();
     }
 }

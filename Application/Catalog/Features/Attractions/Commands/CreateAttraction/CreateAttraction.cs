@@ -39,7 +39,7 @@ namespace AttractionCatalog.Application.Catalog.Features.Attractions.Commands.Cr
                 new AvailabilitySchedule(0, new List<RuleId>()),
                 new());
 
-            attraction.Publish(); // Zmiana stanu na CATALOG
+            attraction.Publish(); // New state: CATALOG
             _repository.Save(attraction);
             return Result.Success();
         }
