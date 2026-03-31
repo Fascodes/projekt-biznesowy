@@ -12,7 +12,7 @@ namespace AttractionCatalog.Tests.Unit.Domain.Modules.CatalogSearch
     {
         [Theory]
         [InlineData(0, 10, 100, false)]  // Entity(0) + Rule1(10) < Entity(0) + Rule2(100) -> DENY wins
-        [InlineData(100, 10, 50, true)] // Entity(100) + Rule1(10) > Entity(100) + Rule2(50) -> ALLOW wins
+        [InlineData(100, 50, 10, true)] // Entity(100) + Rule1(50) > Entity(100) + Rule2(10) -> ALLOW wins
         [InlineData(0, 50, 50, true)]   // Same priority: First one (Allow) in chronological order wins
         public void Logic_Should_Respect_Combined_Priorities(int baseP, int r1P, int r2P, bool expected)
         {

@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
+using AttractionCatalog.Domain.Core.Attractions.ValueObjects;
 using AttractionCatalog.Domain.Modules.CatalogSearch;
+using AttractionCatalog.Domain.Modules.CatalogSearch.Entities;
+using AttractionCatalog.Domain.Modules.CatalogSearch.Services;
+using AttractionCatalog.Domain.Modules.CatalogSearch.ValueObjects;
 using Xunit;
 
 namespace AttractionCatalog.Tests.Unit.Domain
@@ -13,10 +17,10 @@ namespace AttractionCatalog.Tests.Unit.Domain
             // Arrange
             var schedule = new AvailabilitySchedule(100, new List<RuleId>());
             var compiler = new RuleSpecificationCompiler();
-            var criteria = new SearchCriteria(new DateRange(DateTime.Now, DateTime.Now.AddDays(1)));
+            var criteria = new SearchCriteria(new DateRange(DateTime.Now, DateTime.Now.AddDays(1)), null, null, new List<TagId>(), new List<TagId>());
 
             // Act
-            bool result = schedule.IsAvailable(DateTime.Now, compiler, new List<RuleDefinition>());
+            bool result = schedule.IsAvailable(DateTime.Now, new List<RuleDefinition>(), compiler);
 
             // Assert
             Assert.True(result);

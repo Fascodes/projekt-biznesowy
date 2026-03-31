@@ -20,8 +20,8 @@ namespace AttractionCatalog.Application.Catalog.Features.Catalog.Queries.SearchC
         double? Lat, 
         double? Lon, 
         double? Radius, 
-        List<Guid> RequiredTags, 
-        List<Guid> ExcludedTags) : IRequest<Result<List<CatalogDto>>>;
+        List<Guid>? RequiredTags, 
+        List<Guid>? ExcludedTags) : IRequest<Result<List<CatalogDto>>>;
 
     public class SearchCatalogHandler : IRequestHandler<SearchCatalogQuery, Result<List<CatalogDto>>>
     {
@@ -40,8 +40,8 @@ namespace AttractionCatalog.Application.Catalog.Features.Catalog.Queries.SearchC
                 new DateRange(request.Start, request.End),
                 request.Lat.HasValue ? new GeoArea(request.Lat.Value, request.Lon!.Value, request.Radius!.Value) : null,
                 null,
-                request.RequiredTags.Select(id => new TagId(id)).ToList(),
-                request.ExcludedTags.Select(id => new TagId(id)).ToList()
+                request.RequiredTags?.Select(id => new TagId(id)).ToList() ?? new(),
+                request.ExcludedTags?.Select(id => new TagId(id)).ToList() ?? new()
             );
 
             var candidates = _repository.FindByCriteria(null!);

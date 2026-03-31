@@ -19,6 +19,7 @@ namespace AttractionCatalog.Application
             });
 
             // 3. Register Domain Services
+            services.AddSingleton(new System.Collections.Generic.List<AttractionCatalog.Domain.Modules.CatalogSearch.Entities.RuleDefinition>());
             services.AddScoped<CatalogSearchService>();
             services.AddScoped<RuleSpecificationCompiler>();
 

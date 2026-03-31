@@ -1,0 +1,23 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# User-specific files
+*.user
+*.userosscache
+*.sln.docstates
+
+# VS/IDE folders
+.vs/
+.idea/
+.vscode/
+
+# Build logs
+*.log
+
+# NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+
+# macOS
+.DS_Store

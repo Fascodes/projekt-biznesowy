@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using AttractionCatalog.Domain.Core.Attractions.Aggregates;
-using AttractionCatalog.Domain.Core.Attractions.Entities;
 using AttractionCatalog.Domain.Core.Attractions.Enums;
 using AttractionCatalog.Domain.Core.Attractions.ValueObjects;
 using AttractionCatalog.Domain.Modules.CatalogSearch.Entities;

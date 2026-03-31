@@ -1,7 +1,9 @@
 using System;
 using System.Linq.Expressions;
-using AttractionCatalog.Domain.Core.Attractions;
-using AttractionCatalog.Domain.Modules.CatalogSearch;
+using AttractionCatalog.Domain.Core.Attractions.Aggregates;
+using AttractionCatalog.Domain.Core.Attractions.Ports;
+using AttractionCatalog.Domain.Core.Attractions.ValueObjects;
+using AttractionCatalog.Domain.Modules.CatalogSearch.ValueObjects;
 
 namespace AttractionCatalog.Infrastructure.Specifications
 {
@@ -17,9 +19,9 @@ namespace AttractionCatalog.Infrastructure.Specifications
         public Expression<Func<IAttractionComponent, bool>> ToExpression()
         {
             return component => 
-                component is SingleAttraction s && 
+                component is SingleAttraction && 
                 // Tu używamy metody DistanceToKm z kroku 1
-                new Location(s.Location.Latitude, s.Location.Longitude)
+                new Location(((SingleAttraction)component).Location.Latitude, ((SingleAttraction)component).Location.Longitude)
                     .DistanceToKm(new Location(_area.CenterLatitude, _area.CenterLongitude)) <= _area.RadiusKm;
         }
     }

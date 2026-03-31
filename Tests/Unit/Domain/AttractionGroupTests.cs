@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using AttractionCatalog.Domain.Core.Attractions.Entities;
+using AttractionCatalog.Domain.Core.Attractions.Aggregates;
 using AttractionCatalog.Domain.Core.Attractions.Enums;
 using AttractionCatalog.Domain.Core.Attractions.ValueObjects;
 using AttractionCatalog.Domain.Modules.CatalogSearch.Entities;
@@ -13,7 +13,7 @@ namespace AttractionCatalog.Tests.Unit.Domain
         [Fact]
         public void Group_With_Multiple_Components_Should_Aggregate_Logic()
         {
-            var schedule = new AvailabilitySchedule(0, new());
+            var schedule = new AvailabilitySchedule(0, new List<RuleId>());
             var components = new List<IAttractionComponent>
             {
                 new SingleAttraction(new AttractionId(Guid.NewGuid()), "Muzeum", AttractionState.Catalog, new(), new Location(0,0), schedule, new()),

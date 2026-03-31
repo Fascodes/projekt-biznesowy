@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AttractionCatalog.Domain.Core.Attractions.ValueObjects;
 using AttractionCatalog.Domain.Modules.CatalogSearch.Enums;
 using AttractionCatalog.Domain.Modules.CatalogSearch.Services;
 
@@ -38,7 +39,7 @@ namespace AttractionCatalog.Domain.Modules.CatalogSearch.Entities
             }
 
             // Default behavior if no rules match
-            return false;
+            return true;
         }
     }
 }

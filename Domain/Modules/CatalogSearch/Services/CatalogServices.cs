@@ -57,7 +57,7 @@ namespace AttractionCatalog.Domain.Modules.CatalogSearch.Services
 
             // 3. Jeśli to Atrakcja: Przynajmniej jeden scenariusz musi być dostępny (AND z globalnymi)
             if (component is SingleAttraction single)
-                return single.Scenarios.Any(s => s.Schedule.IsAvailable(time, _globalRules, _compiler));
+                return !single.Scenarios.Any() || single.Scenarios.Any(s => s.Schedule.IsAvailable(time, _globalRules, _compiler));
 
             return true;
         }
